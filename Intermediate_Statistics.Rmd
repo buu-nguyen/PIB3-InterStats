@@ -1,0 +1,130 @@
+---
+title: 'Intermediate Statistics'
+author: "NGUYEN Phan Quang Buu"
+date: "Date: Oct 2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    latex_engine: xelatex
+---
+```{r global_options, include = F}
+knitr::opts_chunk$set(message = F, echo = T, eval = T, warning = F, tidy.opts=list(width.cutoff=60))
+```
+
+```{r}
+library(tidyverse)
+surveys1 <- read_csv("Datasets/effec1.quest.compil.csv", locale = locale("fr"))
+surveys2 <- read_csv("Datasets/effec2.quest.compil.csv", locale = locale("fr"))
+surveys3 <- read_csv("Datasets/effec3.quest.compil.csv", locale = locale("fr"))
+usages1 <- distinct(read_csv("Datasets/usages.effec1.csv", locale = locale("fr")))
+usages2 <- distinct(read_csv("Datasets/usages.effec2.csv", locale = locale("fr")))
+usages3 <- distinct(read_csv("Datasets/usages.effec3.csv", locale = locale("fr")))
+```
+
+```{r}
+usages1 <- usages1 %>% mutate(EngagementLevel = case_when(last.quizz == 5 &
+                                                        Assignment.bin == 1 ~ 3, # Completers
+                                 last.quizz > 0 | Assignment.bin == 1 ~ 2, # Disengaging Learners
+                                 last.video / 35 > 0.1 ~ 1, # Auditing Learners
+                                 TRUE ~ 0)) # Bystanders
+
+usages2 <- usages2 %>% mutate(EngagementLevel = case_when(Exam.bin == 1 & 
+                                                        Assignment.bin == 1 ~ 3, # Completers
+                                 last.quizz > 0 | Assignment.bin == 1 ~ 2, # Disengaging Learners
+                                 last.video / 35 > 0.1 ~ 1, # Auditing Learners
+                                 TRUE ~ 0)) # Bystanders
+
+usages3 <- usages3 %>% mutate(EngagementLevel = case_when(Exam.bin == 1 & 
+                                                        Assignment.bin == 1 ~ 3, # Completers
+                                 last.quizz > 0 | Assignment.bin == 1 ~ 2, # Disengaging Learners
+                                 last.video / 35 > 0.1 ~ 1, # Auditing Learners
+                                 TRUE ~ 0)) # Bystanders
+```
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+library(gridExtra)
+
+df1 <- usages1 %>% group_by(EngagementLevel) %>% tally(name = "value") %>%
+          mutate(csum = rev(cumsum(rev(value))), 
+         pos = if_else(is.na(value/2 + lead(csum, 1)), value/2, value/2 + lead(csum, 1)))
+
+plot1 <- ggplot(df1, aes(x = "" , y = value, fill = factor(EngagementLevel))) +
+  geom_col(width = 1, color = 1) +
+  coord_polar(theta = "y") +
+  geom_label_repel(data = df1,
+                   aes(y = pos, label = paste0(round(value / sum(value) * 100,
+                                              digits = 2), "%")),
+                   size = 4.5, nudge_x = 1, show.legend = FALSE) +
+  scale_fill_brewer(palette = "Pastel2", name = "Engagement level",
+                    labels = c('Bystanders', 'Auditing Learners',
+                    'Disengaging Learners', 'Completers')) +
+  
+  theme_void() + labs(title = expression('1'^st*' iteration'))
+
+df2 <- usages2 %>% group_by(EngagementLevel) %>% tally(name = "value") %>%
+          mutate(csum = rev(cumsum(rev(value))), 
+         pos = if_else(is.na(value/2 + lead(csum, 1)), value/2, value/2 + lead(csum, 1)))
+
+plot2 <- ggplot(df2, aes(x = "" , y = value, fill = factor(EngagementLevel))) +
+  geom_col(width = 1, color = 1) +
+  coord_polar(theta = "y") +
+  geom_label_repel(data = df2,
+                   aes(y = pos, label = paste0(round(value / sum(value) * 100,
+                                              digits = 2), "%")),
+                   size = 4.5, nudge_x = 1, show.legend = FALSE) +
+  scale_fill_brewer(palette = "Pastel2", name = "Engagement level",
+                    labels = c('Bystanders', 'Auditing Learners',
+                    'Disengaging Learners', 'Completers')) +
+  
+  theme_void() + labs(title = expression('2'^nd*' iteration'))
+
+df3 <- usages3 %>% group_by(EngagementLevel) %>% tally(name = "value") %>%
+          mutate(csum = rev(cumsum(rev(value))), 
+         pos = if_else(is.na(value/2 + lead(csum, 1)), value/2, value/2 + lead(csum, 1)))
+
+plot3 <- ggplot(df3, aes(x = "" , y = value, fill = factor(EngagementLevel))) +
+  geom_col(width = 1, color = 1) +
+  coord_polar(theta = "y") +
+  geom_label_repel(data = df3,
+                   aes(y = pos, label = paste0(round(value / sum(value) * 100,
+                                              digits = 2), "%")),
+                   size = 4.5, nudge_x = 1, show.legend = FALSE) +
+  scale_fill_brewer(palette = "Pastel2", name = "Engagement level",
+                    labels = c('Bystanders', 'Auditing Learners',
+                    'Disengaging Learners', 'Completers')) +
+  
+  theme_void() + labs(title = expression('3'^rd*' iteration'))
+
+g <- arrangeGrob(plot1, plot2, plot3, ncol = 2, layout_matrix=rbind(c(1,1,2,2), c(NA, 3, 3, NA)))
+ggsave("Plots/engagement_level.png", g)
+grid.arrange(plot1, plot2, plot3, ncol = 2, layout_matrix=rbind(c(1,1,2,2), c(NA, 3, 3, NA)))
+```
+
+
+```{r}
+df1
+df2
+df3
+'student test by number of watched video'
+```
+
+```{r}
+#bystanders <- data %>% filter(EngagementLevel == 0)
+#auditing_learners <- data %>% filter(EngagementLevel == 1)
+#disengaging_learners <- data %>% filter(EngagementLevel == 2)
+#completers <- data %>% filter(EngagementLevel == 3)
+#iter1 <- distinct(full_join(usages1, surveys1, by='Student_ID'))
+#iter2 <- distinct(full_join(usages2, surveys2, by='Student_ID'))
+#iter3 <- distinct(full_join(usages3, surveys3, by='Student_ID'))
+
+usages1 %>% group_by(Exam.bin) %>% tally()
+
+usages1 %>% filter(last.quizz == 5 & last.video == 35) %>% group_by(Exam.bin) %>% tally()
+```
+
+
+
+
