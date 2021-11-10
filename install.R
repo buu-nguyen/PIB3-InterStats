@@ -1,0 +1,7 @@
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("ggrepel")
+install.packages("gridExtra")
+install.packages("survival")
+install.packages("survminer")
+install.packages("devtools")
