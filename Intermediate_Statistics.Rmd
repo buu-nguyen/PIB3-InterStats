@@ -23,7 +23,7 @@ usages3 <- distinct(read_csv("Datasets/usages.effec3.csv", locale = locale("fr")
 ```
 
 ```{r}
-usages1 <- usages1 %>% mutate(EngagementLevel = case_when(last.quizz == 5 &
+usages1 <- usages1 %>% mutate(EngagementLevel = case_when(last.quizz == 5 & last.video > 30 &
                                                         Assignment.bin == 1 ~ 3, # Completers
                                  last.quizz > 0 | Assignment.bin == 1 ~ 2, # Disengaging Learners
                                  last.video / 35 > 0.1 ~ 1, # Auditing Learners
@@ -105,25 +105,39 @@ grid.arrange(plot1, plot2, plot3, ncol = 2, layout_matrix=rbind(c(1,1,2,2), c(NA
 
 
 ```{r}
-df1
-df2
-df3
-'student test by number of watched video'
+# Merge data
+iter1 <- distinct(left_join(surveys1, usages1, by='Student_ID'))
+iter2 <- distinct(left_join(surveys2, usages2, by='Student_ID'))
+iter3 <- distinct(left_join(surveys3, usages3, by='Student_ID'))
+iter3 <- iter3 %>% mutate_at(c('Curiosity.MOOC', 'Rencontres'), as.numeric)
+data <- iter1 %>% full_join(iter2) %>% full_join(iter3)
+head(data)
 ```
+
+ANOVA Test
 
 ```{r}
-#bystanders <- data %>% filter(EngagementLevel == 0)
-#auditing_learners <- data %>% filter(EngagementLevel == 1)
-#disengaging_learners <- data %>% filter(EngagementLevel == 2)
-#completers <- data %>% filter(EngagementLevel == 3)
-#iter1 <- distinct(full_join(usages1, surveys1, by='Student_ID'))
-#iter2 <- distinct(full_join(usages2, surveys2, by='Student_ID'))
-#iter3 <- distinct(full_join(usages3, surveys3, by='Student_ID'))
+# Compute the analysis of variance
+res.aov <- aov(last.video ~ Gender + Country_HDI + CSP, data = data)
 
-usages1 %>% group_by(Exam.bin) %>% tally()
-
-usages1 %>% filter(last.quizz == 5 & last.video == 35) %>% group_by(Exam.bin) %>% tally()
+# Summary of the analysis
+summary(res.aov)
 ```
+
+# Survival Analysis
+```{r}
+library("survival")
+library("survminer")
+data_survival <- data %>% filter(EngagementLevel == 1 | EngagementLevel == 2)
+head(data_survival)
+```
+
+
+```{r}
+survival_gender <- survfit(Surv(last.video, EngagementLevel) ~ Gender, data = data_survival)
+print(survival_gender)
+```
+
 
 
 
